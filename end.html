@@ -8,11 +8,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Quiz Completed</h1>
-        <p id="final-score">Your Score: 0</p>
+        <h1>Quiz Completed!</h1>
+        <p>Your score is: <span id="final-score"></span></p>
         <a href="index.html" class="btn">Home</a>
         <a href="game.html" class="btn">Play Again</a>
     </div>
-    <script src="end.js"></script>
+    <script>
+        document.getElementById('final-score').innerText = localStorage.getItem('mostRecentScore');
+    </script>
 </body>
 </html>
