@@ -1,15 +1,5 @@
-const questionElement = document.getElementById('question');
-const choices = Array.from(document.getElementsByClassName('choice-container'));
-const questionCounterText = document.getElementById('question-counter');
-const scoreText = document.getElementById('score');
-const progressBarFull = document.getElementById('progress-bar');
-
-let currentQuestion = {};
-let acceptingAnswers = true;
+let currentQuestion = 0;
 let score = 0;
-let questionCounter = 0;
-let availableQuestions = [];
-
 let questions = [
     {
         question: 'Which HTML tag is used to define an inline style?',
@@ -37,64 +27,116 @@ let questions = [
     },
 ];
 
-const MAX_QUESTIONS = questions.length;
-const SCORE_POINTS = 10; 
-
-startGame = () => {
-    questionCounter = 0;
-    score = 0;
-    availableQuestions = [...questions];
-    getNewQuestion();
-};
-
-getNewQuestion = () => {
-    if (availableQuestions.length === 0) {
-        localStorage.setItem('mostRecentScore', score);
-        return window.location.assign('end.html');
+window.onload = function() {
+    updateElements();
+    let buttons = document.getElementsByClassName(":not(#final-score) btn");
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].onclick = function() {
+            nextPageAndUpdateScore(i + 1);
+        };
     }
-    questionCounter++;
-    questionCounterText.innerText = `Question: ${questionCounter}`;
-    progressBarFull.style.width = `${(questionCounter / MAX_QUESTIONS) * 100}%`;
+}
 
-    const questionIndex = Math.floor(Math.random() * availableQuestions.length);
-    currentQuestion = availableQuestions[questionIndex];
-    questionElement.innerText = currentQuestion.question;
+function updateElements() {
+    let questionElement = document.getElementById("question");
+    questionElement.innerText = questions[currentQuestion].question;
+    
+    let buttons = document.getElementsByClassName("option-text");
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].innerText = questions[currentQuestion]["choice" + (i + 1)];
+        buttons[i].style.backgroundColor = ""; // Reset button background color
+    }
+   // Inside the updateElements() function
+let progressPercentage = ((currentQuestion + 1) / questions.length) * 100;
+document.querySelector('.progress').style.width = `${progressPercentage}%`;
 
-    choices.forEach((choice, index) => {
-        const optionLetter = String.fromCharCode(65 + index); 
-        choice.innerText = optionLetter + '. ' + currentQuestion['choice' + (index + 1)];
-    });
 
-    availableQuestions.splice(questionIndex, 1);
-    acceptingAnswers = true;
-};
+    document.getElementById("question-num").innerText = currentQuestion + 1;
+    document.getElementById("score").innerText = score;
+}
 
-choices.forEach(choice => {
-    choice.addEventListener('click', e => {
-        if (!acceptingAnswers) return;
+function nextPageAndUpdateScore(option) {
+    let ans = validateAnswer(currentQuestion, option);
+    if (ans) {
+        score += 10;
+    }
 
-        acceptingAnswers = false;
-        const selectedChoice = e.target;
-        const selectedAnswer = selectedChoice.dataset['number'];
+    updateScore(); // Update score on the page
+    changeOptionColor(option, ans); // Change color of option based on answer
 
-        const classToApply = selectedAnswer == currentQuestion.answer ? 'correct' : 'incorrect';
+    // Disable buttons immediately after click
+    disableButtons();
 
-        if (classToApply === 'correct') {
-            incrementScore(SCORE_POINTS);
+    // Add a delay of 1 second before updating elements
+    setTimeout(function() {
+        currentQuestion++;
+        if (currentQuestion >= questions.length) {
+            endQuiz();
+        } else {
+            updateElements();
+            enableButtons(); // Enable buttons after updating elements
         }
+    }, 1000);
 
-        selectedChoice.parentElement.classList.add(classToApply);
+    console.log(`Current question: ${currentQuestion}, Option: ${option}, Score: ${score}`);
+}
 
-        setTimeout(() => {
-            selectedChoice.parentElement.classList.remove(classToApply);
-            getNewQuestion();
-        }, 1000);
-    });
-});
+function endQuiz() {
+    let scoreOverlay = document.querySelector("#f-score");
+    // Show the final score overlay
+    scoreOverlay.classList.remove("hide");
+    scoreOverlay.classList.add("final-score");
+    // Display the final score
+    enableButtons();
+    document.getElementById("final-score").innerText = `Final Score: ${score}`;
+    localStorage.setItem('mostRecentScore', score);
+}
 
-incrementScore = num => {
-    score += num;
-    scoreText.innerText = `Score: ${score}`;
-};
+function changeOptionColor(option, ans) {
+    let buttons = document.getElementsByClassName("option-text");
+    for (let i = 0; i < buttons.length; i++) {
+        if (i + 1 === option) {
+            buttons[i].style.backgroundColor = ans ? "green" : "red";
+        } else {
+            buttons[i].style.backgroundColor = "white";
+        }
+    }
+}
 
-startGame();
+function validateAnswer(currentQuestion, option) {
+    return questions[currentQuestion].answer === option;
+}
+
+function disableButtons() {
+    let buttons = document.getElementsByClassName("btn");
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true; // Disable parent button
+    }
+}
+
+function enableButtons() {
+    let buttons = document.getElementsByClassName("btn");
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = false; // Enable parent button
+    }
+}
+
+function updateScore() {
+    let scoreElement = document.getElementById("score");
+    scoreElement.innerText = score;
+}
+
+function restartQuiz() {
+    currentQuestion = 0;
+    score = 0;
+    console.log("restarting the quiz")
+    let doc = document.querySelector("#f-score");
+    doc.classList.add("hide");
+    doc.classList.remove("final-score");
+    updateElements();
+    enableButtons();
+}
+
+function navigateHome() {
+    window.location.href = 'index.html';
+}
